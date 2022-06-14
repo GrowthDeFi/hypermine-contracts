@@ -1,0 +1,81 @@
+Starting migrations...
+======================
+> Network name:    'mumbai'
+> Network id:      80001
+> Block gas limit: 20000000 (0x1312d00)
+
+
+1_initial_migration.js
+======================
+   -------------------------------------
+   > Total cost:                   0 undefined
+
+
+2_deploy_contracts.js
+=====================
+
+   Deploying 'OTBCToken'
+   ---------------------
+   > transaction hash:    0x1aef8f857f226e94648f30d4eddf9d24e838b3b0c48d295ae7112a86dde006d1
+   > Blocks: 1            Seconds: 4
+   > contract address:    0x2A98C92cee23e6b81c98885a8cac2890Fc0CcCA7
+   > block number:        26190313
+   > block timestamp:     1651611034
+   > account:             0xCDB1c8BD7f31f6EfaeDe6B616d669561292D9Ea5
+   > balance:             1.266282984060615293
+   > gas used:            3004549 (0x2dd885)
+   > gas price:           8.50001 gwei
+   > value sent:          0 ETH
+   > total cost:          0.02553869654549 ETH
+
+   Pausing for 2 confirmations...
+   ------------------------------
+   > confirmation number: 1 (block: 26190313)
+   > confirmation number: 2 (block: 26190314)
+
+   Deploying 'OTBCBar'
+   -------------------
+   > transaction hash:    0x2758299f148f7a282ce7961539e97f9146da749a5966b982b8a9299890c94bca
+   > Blocks: 1            Seconds: 4
+   > contract address:    0x84be3fdbdfd73cbbC518944b19805062eA4fa117
+   > block number:        26190316
+   > block timestamp:     1651611049
+   > account:             0xCDB1c8BD7f31f6EfaeDe6B616d669561292D9Ea5
+   > balance:             1.238001029742305293
+   > gas used:            3327277 (0x32c52d)
+   > gas price:           8.50003 gwei
+   > value sent:          0 ETH
+   > total cost:          0.02828195431831 ETH
+
+   Pausing for 2 confirmations...
+   ------------------------------
+   > confirmation number: 1 (block: 26190317)
+   > confirmation number: 2 (block: 26190318)
+
+   Deploying 'MasterChef'
+   ----------------------
+   > transaction hash:    0x6f77bbead32b438453560bb9199f27ac1674d4536f5ddc3868c7f653d0546616
+   > Blocks: 1            Seconds: 4
+   > contract address:    0x6d8E1De265dC78CBB90115FBBc8f5ddD27442cef
+   > block number:        26190320
+   > block timestamp:     1651611069
+   > account:             0xCDB1c8BD7f31f6EfaeDe6B616d669561292D9Ea5
+   > balance:             1.210785472187735293
+   > gas used:            3201819 (0x30db1b)
+   > gas price:           8.50003 gwei
+   > value sent:          0 ETH
+   > total cost:          0.02721555755457 ETH
+
+   Pausing for 2 confirmations...
+   ------------------------------
+   > confirmation number: 1 (block: 26190320)
+   > confirmation number: 2 (block: 26190321)
+   > Saving artifacts
+   -------------------------------------
+   > Total cost:     0.08103620841837 ETH
+
+
+Summary
+=======
+> Total deployments:   3
+> Final cost:          0.08103620841837 ETH

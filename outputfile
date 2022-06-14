@@ -1,0 +1,176 @@
+Starting migrations...
+======================
+> Network name:    'mumbai'
+> Network id:      80001
+> Block gas limit: 20000000 (0x1312d00)
+
+
+1_initial_migration.js
+======================
+   -------------------------------------
+   > Total cost:                   0 undefined
+
+
+2_deploy_contracts.js
+=====================
+
+   Deploying 'MockToken'
+   ---------------------
+   > transaction hash:    0x2a9238ca46f718dc923a08aca18e1ebc20f682d94f037f29e3a1e6d427853906
+   > Blocks: 0            Seconds: 4
+   > contract address:    0x9174f7b1b2588Cf4b830010A82B68345219D2B54
+   > block number:        26745232
+   > block timestamp:     1655236657
+   > account:             0xCDB1c8BD7f31f6EfaeDe6B616d669561292D9Ea5
+   > balance:             0.903799352812394348
+   > gas used:            1386871 (0x152977)
+   > gas price:           2.425000009 gwei
+   > value sent:          0 ETH
+   > total cost:          0.003363162187481839 ETH
+
+   Pausing for 2 confirmations...
+   ------------------------------
+   > confirmation number: 1 (block: 26745233)
+   > confirmation number: 2 (block: 26745234)
+
+   Replacing 'MockToken'
+   ---------------------
+   > transaction hash:    0xe01607af55caac189a57ef231289d29cb8fc458b675bf5433dd7e547948ae964
+   > Blocks: 1            Seconds: 4
+   > contract address:    0xedAf86e68Ea4a67681d7116f24564e39968006Cf
+   > block number:        26745236
+   > block timestamp:     1655236677
+   > account:             0xCDB1c8BD7f31f6EfaeDe6B616d669561292D9Ea5
+   > balance:             0.900436248824912725
+   > gas used:            1386847 (0x15295f)
+   > gas price:           2.425000009 gwei
+   > value sent:          0 ETH
+   > total cost:          0.003363103987481623 ETH
+
+   Pausing for 2 confirmations...
+   ------------------------------
+   > confirmation number: 1 (block: 26745237)
+   > confirmation number: 2 (block: 26745238)
+
+   Replacing 'MockToken'
+   ---------------------
+   > transaction hash:    0x2b3c7534c65791e550d845c3caa19518550c6c85aa1ed18fab38881359610964
+   > Blocks: 1            Seconds: 4
+   > contract address:    0x98D95eDc8FCfd17284A0F9f20FA75372D6282011
+   > block number:        26745240
+   > block timestamp:     1655236697
+   > account:             0xCDB1c8BD7f31f6EfaeDe6B616d669561292D9Ea5
+   > balance:             0.897073144837431102
+   > gas used:            1386847 (0x15295f)
+   > gas price:           2.425000009 gwei
+   > value sent:          0 ETH
+   > total cost:          0.003363103987481623 ETH
+
+   Pausing for 2 confirmations...
+   ------------------------------
+   > confirmation number: 1 (block: 26745241)
+   > confirmation number: 2 (block: 26745242)
+
+   Replacing 'MockToken'
+   ---------------------
+   > transaction hash:    0xfe78c9bdca016a14a9cc994b4ccccb921597acc38de81629635b4c04c30abcbc
+   > Blocks: 1            Seconds: 4
+   > contract address:    0x1bA00eDf85bDA74b1B20dc11F133fe893007C8Df
+   > block number:        26745243
+   > block timestamp:     1655236712
+   > account:             0xCDB1c8BD7f31f6EfaeDe6B616d669561292D9Ea5
+   > balance:             0.893709982649949263
+   > gas used:            1386871 (0x152977)
+   > gas price:           2.425000009 gwei
+   > value sent:          0 ETH
+   > total cost:          0.003363162187481839 ETH
+
+   Pausing for 2 confirmations...
+   ------------------------------
+   > confirmation number: 1 (block: 26745244)
+   > confirmation number: 2 (block: 26745245)
+
+   Replacing 'MockToken'
+   ---------------------
+   > transaction hash:    0xc43d168d96f6274f152b71e278b1ac27f9515336e4f9e0fd7bacacb4a516acde
+   > Blocks: 1            Seconds: 4
+   > contract address:    0xdBA305f84Fe1cc02bbc1B5185D3FdF1AF30e2C64
+   > block number:        26745247
+   > block timestamp:     1655236732
+   > account:             0xCDB1c8BD7f31f6EfaeDe6B616d669561292D9Ea5
+   > balance:             0.890346820462467424
+   > gas used:            1386871 (0x152977)
+   > gas price:           2.425000009 gwei
+   > value sent:          0 ETH
+   > total cost:          0.003363162187481839 ETH
+
+   Pausing for 2 confirmations...
+   ------------------------------
+   > confirmation number: 1 (block: 26745248)
+   > confirmation number: 2 (block: 26745249)
+
+   Replacing 'MockToken'
+   ---------------------
+   > transaction hash:    0x8e1fed4d282f0aeab8e6588a129e50a15d33bd4498858850a2aa3ee2cdd17353
+   > Blocks: 1            Seconds: 4
+   > contract address:    0xCEEAc2ca17D32DF5EB00ddE5C695Cb172aA954b3
+   > block number:        26745251
+   > block timestamp:     1655236752
+   > account:             0xCDB1c8BD7f31f6EfaeDe6B616d669561292D9Ea5
+   > balance:             0.886983658273598714
+   > gas used:            1386871 (0x152977)
+   > gas price:           2.42500001 gwei
+   > value sent:          0 ETH
+   > total cost:          0.00336316218886871 ETH
+
+   Pausing for 2 confirmations...
+   ------------------------------
+   > confirmation number: 1 (block: 26745252)
+   > confirmation number: 2 (block: 26745253)
+
+   Deploying 'MockOraclePair'
+   --------------------------
+   > transaction hash:    0xcb11e2bcdbcbc0b54e4350aa7351fd7f4d76cef4a517b1512643e387f0a33faf
+   > Blocks: 1            Seconds: 4
+   > contract address:    0xf3d351cf746c9F41e30908432bC7A9Af22BCa65C
+   > block number:        26745255
+   > block timestamp:     1655236772
+   > account:             0xCDB1c8BD7f31f6EfaeDe6B616d669561292D9Ea5
+   > balance:             0.886357348671015994
+   > gas used:            258272 (0x3f0e0)
+   > gas price:           2.42500001 gwei
+   > value sent:          0 ETH
+   > total cost:          0.00062630960258272 ETH
+
+   Pausing for 2 confirmations...
+   ------------------------------
+   > confirmation number: 1 (block: 26745256)
+   > confirmation number: 2 (block: 26745257)
+
+   Deploying 'HmineSacrifice'
+   --------------------------
+   > transaction hash:    0x23db806dbf568e3aa88c06b3d1d36f5518fc3b82c3928037f7e76ac95651003e
+   > Blocks: 1            Seconds: 4
+   > contract address:    0x69b7A15Eb2b06939046226A7616dF97E7943B8D4
+   > block number:        26745259
+   > block timestamp:     1655236792
+   > account:             0xCDB1c8BD7f31f6EfaeDe6B616d669561292D9Ea5
+   > balance:             0.878613421539082274
+   > gas used:            3193372 (0x30ba1c)
+   > gas price:           2.42500001 gwei
+   > value sent:          0 ETH
+   > total cost:          0.00774392713193372 ETH
+
+   Pausing for 2 confirmations...
+   ------------------------------
+   > confirmation number: 1 (block: 26745260)
+   > confirmation number: 2 (block: 26745261)
+   > Saving artifacts
+   -------------------------------------
+   > Total cost:     0.028549093460793913 ETH
+
+
+Summary
+=======
+> Total deployments:   8
+> Final cost:          0.028549093460793913 ETH
