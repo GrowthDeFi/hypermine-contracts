@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity >=0.8.0;
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/interfaces/IERC20.sol";
 import "./interfaces/IOraclePair.sol";
+import "./interfaces/IOracle.sol";
 
 struct Sacrifice {
     bool isEnabled;
@@ -18,9 +19,7 @@ struct User {
     uint256 amount;
 }
 
-contract HmineSacrifice is Ownable {
-    using SafeMath for uint256;
-
+contract HmineSacrifice is Ownable, ReentrancyGuard {
     mapping(address => Sacrifice) public sacrifices;
     uint256 public startTime;
     uint256 public roundPeriod = 48 hours;
@@ -32,18 +31,20 @@ contract HmineSacrifice is Ownable {
     mapping(uint256 => User) public users;
     address public sacrificesTo;
     address public wbnb;
+    address public twap;
+    uint256 public twapMax = 30;
 
     constructor(
         address _sacTo,
         address _wbnb,
-        address _bnbLP
+        address _bnbLP,
+        address _twap
     ) {
         sacrificesTo = _sacTo;
         wbnb = _wbnb;
+        twap = _twap;
         _addSac(_wbnb, false, _bnbLP);
     }
-
-    receive() external payable {}
 
     function getSacrificeInfo(address _token)
         external
@@ -58,7 +59,10 @@ contract HmineSacrifice is Ownable {
         hminePerRound = _max;
     }
 
-    function sacrificeERC20(address _token, uint256 _amount) public {
+    function sacrificeERC20(address _token, uint256 _amount)
+        public
+        nonReentrant
+    {
         require(hasSacrifice(_token), "Sacrifice not supported. ");
         require(_amount > 0, "Amount cannot be less than zero");
 
@@ -67,19 +71,21 @@ contract HmineSacrifice is Ownable {
 
         if (
             totalHmine >= hminePerRound ||
-            block.timestamp > startTime.add(roundPeriod)
+            block.timestamp > startTime + (roundPeriod)
         ) {
-            price = initPrice.add(50);
+            price = initPrice + (50);
         }
 
         if (sacrifices[_token].isStable) {
-            _hmineAmount = _amount.div(price).mul(100);
+            _hmineAmount = (_amount * (100)) / (price);
         } else {
-            _hmineAmount = getAmountInStable(
-                _token,
-                sacrifices[_token].oracleAddress,
-                _amount
-            ).div(price).mul(100);
+            _hmineAmount =
+                (getAmountInStable(
+                    _token,
+                    sacrifices[_token].oracleAddress,
+                    _amount
+                ) * 100) /
+                (price);
         }
 
         require(
@@ -89,8 +95,8 @@ contract HmineSacrifice is Ownable {
 
         uint256 _index = assignUserIndex(msg.sender);
         users[_index].user = msg.sender;
-        users[_index].amount = _hmineAmount.add(users[_index].amount);
-        totalHmine = _hmineAmount.add(totalHmine);
+        users[_index].amount = _hmineAmount + (users[_index].amount);
+        totalHmine = _hmineAmount + (totalHmine);
         SafeERC20.safeTransferFrom(
             IERC20(_token),
             msg.sender,
@@ -99,7 +105,7 @@ contract HmineSacrifice is Ownable {
         );
     }
 
-    function sacrificeBNB() public payable {
+    function sacrificeBNB() public payable nonReentrant {
         uint256 _amount = msg.value;
         require(hasSacrifice(wbnb), "Sacrifice not supported. ");
         require(_amount > 0, "Amount cannot be less than zero");
@@ -109,16 +115,15 @@ contract HmineSacrifice is Ownable {
 
         if (
             totalHmine >= hminePerRound ||
-            block.timestamp > startTime.add(roundPeriod)
+            block.timestamp > startTime + (roundPeriod)
         ) {
-            price = initPrice.add(50);
+            price = initPrice + (50);
         }
 
-        _hmineAmount = getAmountInStable(
-            wbnb,
-            sacrifices[wbnb].oracleAddress,
-            _amount
-        ).div(price).mul(100);
+        _hmineAmount =
+            (getAmountInStable(wbnb, sacrifices[wbnb].oracleAddress, _amount) *
+                100) /
+            (price);
 
         require(
             validateRound(_hmineAmount),
@@ -127,8 +132,8 @@ contract HmineSacrifice is Ownable {
 
         uint256 _index = assignUserIndex(msg.sender);
         users[_index].user = msg.sender;
-        users[_index].amount = _hmineAmount.add(users[_index].amount);
-        totalHmine = _hmineAmount.add(totalHmine);
+        users[_index].amount = _hmineAmount + (users[_index].amount);
+        totalHmine = _hmineAmount + (totalHmine);
 
         //Sends BNB to the multisig wallet.
         address payable receiver = payable(sacrificesTo);
@@ -143,9 +148,9 @@ contract HmineSacrifice is Ownable {
         startTime = _time;
     }
 
-    function updateRoundPeriod(uint256 _rPeriod) public onlyOwner {
-        require(_rPeriod > 0, "Period must be positive time. ");
-        roundPeriod = _rPeriod;
+    function updateTwap(address _twap) public onlyOwner {
+        require(address(this) != _twap, "Cannot be contract.");
+        twap = _twap;
     }
 
     function updateSacrifice(
@@ -207,7 +212,7 @@ contract HmineSacrifice is Ownable {
         if (startTime == 0) {
             return 0;
         }
-        if (block.timestamp <= startTime.add(roundPeriod)) {
+        if (block.timestamp <= startTime + (roundPeriod)) {
             return 1;
         }
         return 2;
@@ -226,16 +231,16 @@ contract HmineSacrifice is Ownable {
 
         // HMINE for first round met, but it's still not 48 hours yet.
         if (
-            totalHmine.add(_hmineAmount) > hminePerRound &&
-            block.timestamp < startTime.add(roundPeriod)
+            totalHmine + (_hmineAmount) > hminePerRound &&
+            block.timestamp < startTime + (roundPeriod)
         ) {
             return false;
         }
 
         // HMINE cap has been met or block time has passed the 4 day period.
         if (
-            totalHmine.add(_hmineAmount) > hminePerRound.mul(2) ||
-            block.timestamp >= (roundPeriod).mul(2).add(startTime)
+            totalHmine + (_hmineAmount) > hminePerRound * (2) ||
+            block.timestamp >= (roundPeriod) * (2) + (startTime)
         ) {
             return false;
         }
@@ -249,7 +254,7 @@ contract HmineSacrifice is Ownable {
         if (userIndex[_user] != 0) {
             return userIndex[_user];
         }
-        index = index++;
+        index += 1;
         return index;
     }
 
@@ -267,15 +272,33 @@ contract HmineSacrifice is Ownable {
         address _token,
         address _lp,
         uint256 _amount
-    ) internal view returns (uint256) {
+    ) internal returns (uint256 _price) {
         IOraclePair LP = IOraclePair(_lp);
         (uint256 reserve0, uint256 reserve1, ) = LP.getReserves();
         address token0 = LP.token0();
 
         if (token0 == _token) {
-            return reserve1.mul(_amount).div(reserve0);
+            _price = (reserve1 * (_amount)) / (reserve0);
         } else {
-            return reserve0.mul(_amount).div(reserve1);
+            _price = (reserve0 * (_amount)) / (reserve1);
         }
+
+        IOracle(twap).updateAveragePrice(_lp);
+
+        uint256 twapPrice = IOracle(twap).consultAveragePrice(
+            _lp,
+            _token,
+            _amount
+        );
+
+        require(
+            (_price * twapMax) / 1000 < _price - twapPrice,
+            "TWAP Price Error"
+        );
+    }
+
+    function updateTwapMax(uint256 _twapMax) external onlyOwner{
+        require(_twapMax > 0, "Cannot be less than zero");
+        twapMax = _twapMax;
     }
 }
