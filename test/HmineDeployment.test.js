@@ -6,6 +6,7 @@ const DAI = artifacts.require("MockToken.sol");
 const USDC = artifacts.require("MockToken.sol");
 const BUSD = artifacts.require("MockToken.sol");
 const SAFE = artifacts.require("MockToken.sol");
+const MockOracle = artifacts.require("MockOracle.sol");
 const MockOraclePair = artifacts.require("MockOraclePair.sol");
 const HmineSacrifice = artifacts.require("HmineSacrifice.sol");
 
@@ -22,10 +23,13 @@ contract("Deployed&Test", ([admin, sacrificesTo, carol, dev, tester]) => {
       this.wbnb.address,
       this.busd.address
     );
+
+    this.oracleTwap = await MockOracle.new();
     this.hmine = await HmineSacrifice.new(
       sacrificesTo,
       this.wbnb.address,
       this.oracle.address,
+      this.oracleTwap.address,
       { from: admin }
     );
   });
@@ -81,5 +85,14 @@ contract("Deployed&Test", ([admin, sacrificesTo, carol, dev, tester]) => {
     assert.equal(token0, this.wbnb.address);
     assert.equal(token1, this.busd.address);
     assert.equal(this.oracle.address, oracle.oracleAddress);
+  });
+
+  it("MockOracleTwapWorks", async () => {
+    const amount = await this.oracleTwap.consultAveragePrice(
+      this.oracle.address,
+      this.wbnb.address,
+      "1000000000000000000"
+    );
+    assert.equal(amount / 1e18, 294);
   });
 });

@@ -6,6 +6,7 @@ const DAI = artifacts.require("MockToken.sol");
 const USDC = artifacts.require("MockToken.sol");
 const BUSD = artifacts.require("MockToken.sol");
 const SAFE = artifacts.require("MockToken.sol");
+const MockOracle = artifacts.require("MockOracle.sol");
 const MockOraclePair = artifacts.require("MockOraclePair.sol");
 const HmineSacrifice = artifacts.require("HmineSacrifice.sol");
 
@@ -17,6 +18,7 @@ contract("Deployed&Test", ([admin, sacrificesTo, carol, dev, tester]) => {
     this.usdc = await USDC.new("USDC", "USDC", 18, { from: admin });
     this.busd = await BUSD.new("BUSD", "BUSD", 18, { from: admin });
     this.safe = await SAFE.new("SAFE", "SAFE", 18, { from: admin });
+    this.oracleTwap = await MockOracle.new();
 
     this.oracle = await MockOraclePair.new(
       this.wbnb.address,
@@ -26,6 +28,7 @@ contract("Deployed&Test", ([admin, sacrificesTo, carol, dev, tester]) => {
       sacrificesTo,
       this.wbnb.address,
       this.oracle.address,
+      this.oracleTwap.address,
       { from: admin }
     );
   });
@@ -120,7 +123,7 @@ contract("Deployed&Test", ([admin, sacrificesTo, carol, dev, tester]) => {
     const data2 = await this.hmine.getUserByIndex(0);
 
     assert.equal(data.user, data2.user);
-    assert.equal(data.amount * 6, 10e18 * 300);
+    assert.equal(data.amount * 6, 10e18 * 294);
   });
 
   it("SacrificedStableWorked", async () => {
@@ -131,7 +134,10 @@ contract("Deployed&Test", ([admin, sacrificesTo, carol, dev, tester]) => {
       "0x0000000000000000000000000000000000000000"
     );
     await this.safe.approve(this.hmine.address, "6000000000000000000000");
-    await this.hmine.sacrificeERC20(this.safe.address, "6000000000000000000000");
+    await this.hmine.sacrificeERC20(
+      this.safe.address,
+      "6000000000000000000000"
+    );
 
     const data = await this.hmine.getUserByAddress(dev);
     const data2 = await this.hmine.getUserByIndex(0);
@@ -163,6 +169,6 @@ contract("Deployed&Test", ([admin, sacrificesTo, carol, dev, tester]) => {
     const data2 = await this.hmine.getUserByIndex(0);
 
     assert.equal(data.user, data2.user);
-    assert.equal((data.amount / 1e18).toFixed(0), "462");
+    assert.equal((data.amount / 1e18).toFixed(0), "452");
   });
 });

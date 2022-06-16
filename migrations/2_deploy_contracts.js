@@ -4,6 +4,7 @@ const DAI = artifacts.require("MockToken.sol");
 const USDC = artifacts.require("MockToken.sol");
 const BUSD = artifacts.require("MockToken.sol");
 const SAFE = artifacts.require("MockToken.sol");
+const MockOracle = artifacts.require("MockOracle.sol");
 const MockOraclePair = artifacts.require("MockOraclePair.sol");
 const HmineSacrifice = artifacts.require("HmineSacrifice.sol");
 
@@ -29,13 +30,17 @@ module.exports = async function (deployer, network, addresses) {
     await deployer.deploy(SAFE, "SAFE", "SAFE", 18);
     const safe = await SAFE.deployed();
 
+    await deployer.deploy(MockOracle);
+    const oracle = await MockOracle.deployed();
+
     await deployer.deploy(MockOraclePair, wbnb.address, busd.address);
-    const oracle = await MockOraclePair.deployed();
+    const oracleLP = await MockOraclePair.deployed();
 
     await deployer.deploy(
       HmineSacrifice,
       sacrificesTo,
       wbnb.address,
+      oracleLP.address,
       oracle.address
     );
     const hmineSacrifice = await HmineSacrifice.deployed();

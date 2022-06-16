@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/interfaces/IERC20.sol";
 import "./interfaces/IOraclePair.sol";
-import "./interfaces/IOracle.sol";
+import "./interfaces/IOracleTwap.sol";
 
 struct Sacrifice {
     bool isEnabled;
@@ -254,8 +254,7 @@ contract HmineSacrifice is Ownable, ReentrancyGuard {
         if (userIndex[_user] != 0) {
             return userIndex[_user];
         }
-        index += 1;
-        return index;
+        return index++;
     }
 
     // Checks if token is a supported asset to sacrifice.
@@ -283,21 +282,23 @@ contract HmineSacrifice is Ownable, ReentrancyGuard {
             _price = (reserve0 * (_amount)) / (reserve1);
         }
 
-        IOracle(twap).updateAveragePrice(_lp);
+        IOracleTwap(twap).updateAveragePrice(_lp);
 
-        uint256 twapPrice = IOracle(twap).consultAveragePrice(
+        uint256 twapPrice = IOracleTwap(twap).consultAveragePrice(
             _lp,
             _token,
             _amount
         );
 
         require(
-            (_price * twapMax) / 1000 < _price - twapPrice,
+            (_price * twapMax) / 1000 > _price - twapPrice,
             "TWAP Price Error"
         );
+
+        _price = twapPrice;
     }
 
-    function updateTwapMax(uint256 _twapMax) external onlyOwner{
+    function updateTwapMax(uint256 _twapMax) external onlyOwner {
         require(_twapMax > 0, "Cannot be less than zero");
         twapMax = _twapMax;
     }
