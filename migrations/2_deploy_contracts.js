@@ -1,11 +1,3 @@
-const WBNB = artifacts.require("MockToken.sol");
-const MOR = artifacts.require("MockToken.sol");
-const DAI = artifacts.require("MockToken.sol");
-const USDC = artifacts.require("MockToken.sol");
-const BUSD = artifacts.require("MockToken.sol");
-const SAFE = artifacts.require("MockToken.sol");
-const MockOracle = artifacts.require("MockOracle.sol");
-const MockOraclePair = artifacts.require("MockOraclePair.sol");
 const HmineSacrifice = artifacts.require("HmineSacrifice.sol");
 
 module.exports = async function (deployer, network, addresses) {

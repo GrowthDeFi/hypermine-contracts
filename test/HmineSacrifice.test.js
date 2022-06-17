@@ -112,7 +112,7 @@ contract("Deployed&Test", ([admin, sacrificesTo, carol, dev, tester]) => {
     await this.hmine.startFirstRound(Math.trunc(Date.now() / 1000 + 15000));
     await expect(
       this.hmine.sacrificeBNB({ from: dev, value: "10000000000000000000" })
-    ).to.be.revertedWith("Round ended or not started yet.");
+    ).to.be.revertedWith("Round ended or not started yet");
   });
 
   it("SacrificedBNBWorked", async () => {
@@ -120,10 +120,10 @@ contract("Deployed&Test", ([admin, sacrificesTo, carol, dev, tester]) => {
     await this.hmine.sacrificeBNB({ from: dev, value: "10000000000000000000" });
 
     const data = await this.hmine.getUserByAddress(dev);
-    const data2 = await this.hmine.getUserByIndex(0);
+    const data2 = await this.hmine.getUserByIndex(1);
 
     assert.equal(data.user, data2.user);
-    assert.equal(data.amount * 6, 10e18 * 294);
+    assert.equal(data.amount * 6, 10e18 * 300);
   });
 
   it("SacrificedStableWorked", async () => {
@@ -133,14 +133,19 @@ contract("Deployed&Test", ([admin, sacrificesTo, carol, dev, tester]) => {
       true,
       "0x0000000000000000000000000000000000000000"
     );
-    await this.safe.approve(this.hmine.address, "6000000000000000000000");
+    await this.safe.approve(carol, "6000000000000000000000");
+    await this.safe.transfer(carol, "6000000000000000000000");
+    await this.safe.approve(this.hmine.address, "6000000000000000000000", {
+      from: carol,
+    });
     await this.hmine.sacrificeERC20(
       this.safe.address,
-      "6000000000000000000000"
+      "6000000000000000000000",
+      { from: carol }
     );
 
-    const data = await this.hmine.getUserByAddress(dev);
-    const data2 = await this.hmine.getUserByIndex(0);
+    const data = await this.hmine.getUserByAddress(carol);
+    const data2 = await this.hmine.getUserByIndex(1);
 
     assert.equal(data.user, data2.user);
     assert.equal(data.amount * 6, 6000e18);
@@ -150,7 +155,7 @@ contract("Deployed&Test", ([admin, sacrificesTo, carol, dev, tester]) => {
     await this.hmine.startFirstRound(Math.trunc(Date.now() / 1000 - 86400 * 4));
     await expect(
       this.hmine.sacrificeBNB({ from: dev, value: "10000000000000000000" })
-    ).to.be.revertedWith("Round ended or not started yet.");
+    ).to.be.revertedWith("Round ended or not started yet");
   });
 
   it("MaxHmineReached", async () => {
@@ -158,7 +163,7 @@ contract("Deployed&Test", ([admin, sacrificesTo, carol, dev, tester]) => {
     await this.hmine.startFirstRound(Math.trunc(Date.now() / 1000 - 15000));
     await expect(
       this.hmine.sacrificeBNB({ from: dev, value: "10000000000000000000" })
-    ).to.be.revertedWith("Round ended or not started yet.");
+    ).to.be.revertedWith("Round ended or not started yet");
   });
 
   it("RoundValueCheck", async () => {
@@ -166,9 +171,9 @@ contract("Deployed&Test", ([admin, sacrificesTo, carol, dev, tester]) => {
     await this.hmine.sacrificeBNB({ from: dev, value: "10000000000000000000" });
 
     const data = await this.hmine.getUserByAddress(dev);
-    const data2 = await this.hmine.getUserByIndex(0);
+    const data2 = await this.hmine.getUserByIndex(1);
 
     assert.equal(data.user, data2.user);
-    assert.equal((data.amount / 1e18).toFixed(0), "452");
+    assert.equal((data.amount / 1e18).toFixed(0), "462");
   });
 });
