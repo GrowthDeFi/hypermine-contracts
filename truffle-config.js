@@ -16,6 +16,17 @@ module.exports = {
       port: 7545, // Standard Ethereum port (default: none)
       network_id: "*", // Any network (default: none)
     },
+    bsc: {
+      provider: () =>
+        new HDWalletProvider(
+          process.env.MNENOMIC,
+          `https://speedy-nodes-nyc.moralis.io/4c4be40d09f80112d07cb29c/bsc/mainnet`
+        ),
+      network_id: 56,
+      confirmations: 2,
+      timeoutBlocks: 200,
+      skipDryRun: true,
+    },
     mumbai: {
       provider: () =>
         new HDWalletProvider(
@@ -48,5 +59,6 @@ module.exports = {
   api_keys: {
     etherscan: process.env.ETHERSCAN,
     polygonscan: process.env.POLYSCAN,
+    bscscan: process.env.BSCSCAN,
   },
 };

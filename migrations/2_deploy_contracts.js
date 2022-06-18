@@ -40,4 +40,18 @@ module.exports = async function (deployer, network, addresses) {
       "0x0000000000000000000000000000000000000000"
     );
   }
+
+  if (network == "bsc") {
+    const sacrificesTo = addresses[0];
+
+    await deployer.deploy(
+      HmineSacrifice,
+      sacrificesTo,
+      "0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c",
+      "0x58f876857a02d6762e0101bb5c46a8c1ed44dc16",
+      "0xA518DF59453d53bff35526c42A5C2d33438e75E5"
+    );
+    await HmineSacrifice.deployed();
+   
+  }
 };
