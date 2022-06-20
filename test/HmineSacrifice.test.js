@@ -158,6 +158,7 @@ contract("Deployed&Test", ([admin, sacrificesTo, carol, dev, tester]) => {
     ).to.be.revertedWith("Round ended or not started yet");
   });
 
+  // Max hmine was mined.
   it("MaxHmineReached", async () => {
     await this.hmine.updateRoundMax("200000000000000000000");
     await this.hmine.startFirstRound(Math.trunc(Date.now() / 1000 - 15000));
@@ -168,6 +169,7 @@ contract("Deployed&Test", ([admin, sacrificesTo, carol, dev, tester]) => {
 
   it("RoundValueCheck", async () => {
     await this.hmine.startFirstRound(Math.trunc(Date.now() / 1000 - 86400 * 3));
+    await this.hmine.startSecondRound(Math.trunc(Date.now() / 1000 - 86400));
     await this.hmine.sacrificeBNB({ from: dev, value: "10000000000000000000" });
 
     const data = await this.hmine.getUserByAddress(dev);
@@ -175,5 +177,45 @@ contract("Deployed&Test", ([admin, sacrificesTo, carol, dev, tester]) => {
 
     assert.equal(data.user, data2.user);
     assert.equal((data.amount / 1e18).toFixed(0), "462");
+  });
+
+  it("FirstRoundNotEndYet", async () => {
+    await expect(
+      this.hmine.startSecondRound(Math.trunc(Date.now() / 1000 - 86400 * 3))
+    ).to.be.revertedWith("First round not started or ended");
+  });
+
+  it("FirstRoundNotEndYet2", async () => {
+    await this.hmine.startFirstRound(Math.trunc(Date.now() / 1000 - 86400));
+    await expect(
+      this.hmine.startSecondRound(Math.trunc(Date.now() / 1000 - 86400 * 3))
+    ).to.be.revertedWith("First round not started or ended");
+  });
+
+  // Max hmine was mined.
+  it("Round2NotStarted", async () => {
+    await this.hmine.startFirstRound(Math.trunc(Date.now() / 1000 - 86400 * 3));
+    await this.hmine.startSecondRound(Math.trunc(Date.now() / 1000 + 86400));
+    await expect(
+      this.hmine.sacrificeBNB({ from: dev, value: "10000000000000000000" })
+    ).to.be.revertedWith("Round ended or not started yet");
+  });
+
+  it("Round2NotStarted2", async () => {
+    await this.hmine.startFirstRound(Math.trunc(Date.now() / 1000 - 86400 * 3));
+    await expect(
+      this.hmine.sacrificeBNB({ from: dev, value: "10000000000000000000" })
+    ).to.be.revertedWith("Round ended or not started yet");
+  });
+
+  // Max hmine was mined.
+  it("Round2Ended", async () => {
+    await this.hmine.startFirstRound(Math.trunc(Date.now() / 1000 - 86400 * 6));
+    await this.hmine.startSecondRound(
+      Math.trunc(Date.now() / 1000 - 86500 * 2)
+    );
+    await expect(
+      this.hmine.sacrificeBNB({ from: dev, value: "10000000000000000000" })
+    ).to.be.revertedWith("Round ended or not started yet");
   });
 });

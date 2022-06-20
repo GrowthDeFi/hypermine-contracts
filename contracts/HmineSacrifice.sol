@@ -50,7 +50,8 @@ contract HmineSacrifice is Ownable, ReentrancyGuard {
     }
 
     mapping(address => Sacrifice) public sacrifices;
-    uint256 public startTime = 0;
+    uint256 public startRoundOne = 0;
+    uint256 public startRoundTwo = 0;
     uint256 constant roundPeriod = 48 hours;
     uint256 public hminePerRound = 50000e18; // Hmine per round is 50K
     uint256 public totalHmine;
@@ -104,9 +105,13 @@ contract HmineSacrifice is Ownable, ReentrancyGuard {
 
     // Returns the current round.
     function getCurrentRound() external view returns (uint16) {
-        if (startTime == 0) return 0;
-        if (block.timestamp <= startTime + roundPeriod) return 1;
-        return 2;
+        return _getCurrentRound();
+    }
+
+    function _getCurrentRound() internal view returns (uint16) {
+        if (startRoundTwo != 0 && block.timestamp <= startRoundTwo + roundPeriod && block.timestamp > startRoundOne + roundPeriod) return 2;
+        if (startRoundOne != 0 && block.timestamp <= startRoundOne + roundPeriod) return 1;
+        return 0;
     }
 
     function updateNickname(string memory nickname) external {
@@ -124,8 +129,7 @@ contract HmineSacrifice is Ownable, ReentrancyGuard {
 
         uint256 price = initPrice;
         if (
-            totalHmine >= hminePerRound ||
-            block.timestamp > startTime + roundPeriod
+            _getCurrentRound() == 2
         ) {
             price = initPrice + 50;
         }
@@ -161,8 +165,7 @@ contract HmineSacrifice is Ownable, ReentrancyGuard {
 
         uint256 price = initPrice;
         if (
-            totalHmine >= hminePerRound ||
-            block.timestamp > startTime + roundPeriod
+            _getCurrentRound() == 2
         ) {
             price = initPrice + 50;
         }
@@ -185,7 +188,7 @@ contract HmineSacrifice is Ownable, ReentrancyGuard {
     }
 
     function updateRoundMax(uint256 _max) external onlyOwner {
-        require(startTime == 0, "Cannot update after round started");
+        require(startRoundOne == 0 && startRoundTwo == 0, "Cannot update after round started");
         hminePerRound = _max;
     }
 
@@ -201,10 +204,19 @@ contract HmineSacrifice is Ownable, ReentrancyGuard {
 
     function startFirstRound(uint256 _time) external onlyOwner {
         require(
-            startTime > block.timestamp || startTime == 0,
+            startRoundOne > block.timestamp || startRoundOne == 0,
             "Rounds were already started"
         );
-        startTime = _time;
+        startRoundOne = _time;
+    }
+
+    function startSecondRound(uint256 _time) external onlyOwner {
+        require(block.timestamp > startRoundOne + roundPeriod && startRoundOne != 0, "First round not started or ended");
+        require(
+            startRoundTwo > block.timestamp || startRoundTwo == 0,
+            "Rounds were already started"
+        );
+        startRoundTwo = _time;
     }
 
     function addSacToken(
@@ -236,7 +248,6 @@ contract HmineSacrifice is Ownable, ReentrancyGuard {
         bool _isStable,
         address _lpAddress
     ) public onlyOwner {
-        require(address(0) != _lpAddress, "Cannot be contract.");
         require(hasSacrifice(_token), "Sacrifice not supported");
         address _token0 = IOraclePair(_lpAddress).token0();
         address _token1 = IOraclePair(_lpAddress).token1();
@@ -310,19 +321,28 @@ contract HmineSacrifice is Ownable, ReentrancyGuard {
      ** Cannot sacrifice if 100K HMINE met or round2 ends.
      */
     function validateRound(uint256 _hmineAmount) internal view returns (bool) {
-        // No start time yet.
-        if (startTime == 0 || block.timestamp < startTime) return false;
+        // Round one not started yet.
+        if (startRoundOne == 0 || block.timestamp < startRoundOne) return false;
 
-        // HMINE for first round met, but it's still not 48 hours yet.
+        // Round one not end yet, but HMINE max met.
         if (
             totalHmine + _hmineAmount > hminePerRound &&
-            block.timestamp < startTime + roundPeriod
+            block.timestamp < startRoundOne + roundPeriod
         ) return false;
 
-        // HMINE cap has been met or block time has passed the 4 day period.
+        // Round one ended but round two not started yet. 
         if (
-            totalHmine + _hmineAmount > 2 * hminePerRound ||
-            block.timestamp >= startTime + 2 * roundPeriod
+            block.timestamp > startRoundOne + roundPeriod && (startRoundTwo == 0 || startRoundTwo > block.timestamp)
+        ) return false;
+
+        // HMINE cap has been met.
+        if (
+            totalHmine + _hmineAmount > 2 * hminePerRound
+        ) return false;
+
+        // Round two has started and ended.
+        if (
+            block.timestamp >= startRoundTwo + roundPeriod && startRoundTwo != 0
         ) return false;
 
         return true;
