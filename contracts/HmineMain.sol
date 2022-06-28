@@ -4,9 +4,7 @@ pragma solidity >=0.8.9;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/utils/Address.sol";
 
 contract HmineSacrifice is Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
@@ -221,6 +219,13 @@ contract HmineSacrifice is Ownable, ReentrancyGuard {
         IERC20(currencyToken).safeTransfer(bankroll, _amount * 10 / 100);
         // User only gets 80%
         IERC20(currencyToken).safeTransfer(msg.sender,  _amount * 80 / 100);
+    }
+
+    // Adds a nickname to the user. 
+    function updateNickname(string memory nickname) external {
+        uint256 _index = userIndex[msg.sender];
+        require(index != 0, "User does not exist");
+        users[_index].nickname = nickname;
     }
 
     // Claim DIV as MOR
