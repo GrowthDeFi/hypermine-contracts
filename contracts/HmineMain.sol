@@ -26,9 +26,13 @@ contract HmineSacrifice is Ownable, ReentrancyGuard {
     uint256 public index;
     uint256 public totalSold = 100000e18;
     uint256 public totalStaked = 100000e18;
-    uint256 public maxSupply = 200000e18;
     uint256 public currentPrice = 7e18; // The price is divisible by 100.  So in this case 7.00 is the current price.
     uint256 public roundIncrement = 1000e18;
+    uint256 maxSupply = 200000e18;
+    uint maxValue = 16250000e18;
+    uint firstRound = 100000e18;
+    uint secondRound = 101000e18;
+    uint migrateTime;
 
     mapping(address => uint256) userIndex;
     mapping(uint256 => User) public users;
@@ -60,7 +64,22 @@ contract HmineSacrifice is Ownable, ReentrancyGuard {
         startTime = time;
     }
 
-    // An external function to calculate the buy price and selling price.
+    // Used to initally migrate the user data from the sacrifice round. Can only be run once. 
+    function migrateSacrifice(User[] memory _users, uint userLength) external onlyOwner {
+        require(migrateTime == 0, "Already migrated");
+        migrateTime = block.timestamp;
+        uint counter; 
+        //Work in progress
+        while(counter < userLength){
+            uint256 _index = assignUserIndex(msg.sender);
+            users[_index] = _users[counter];
+            counter += 1; 
+        }
+    }
+
+    // An external function to calculate the swap value.
+    // If it's a buy then calculate the amount of HMINE you get for the DAI input.
+    //If it's a sell then calculate the amount of DAI you get for the HMINE input. 
     function calculateSwap(uint256 _amount, bool isBuy)
         external
         view
@@ -82,51 +101,48 @@ contract HmineSacrifice is Ownable, ReentrancyGuard {
         view
         returns (uint256, uint256)
     {
-        uint256 modTotal = totalSold % roundIncrement;
-        uint256 value;
-        uint256 _initPrice = currentPrice;
+        uint256 hmineValue;
+        uint256 _initPrice = currentPrice / 1e18;
         uint256 _total = totalSold;
+        uint256 amountLeftOver = _amount;
 
-        // There are less than 100,000 sold even after this buy transaction.
-        if (_total + _amount < 101000e18) {
-            return ((7e18 * _amount) / 1e18, 7e18);
+        if(_total + amountLeftOver / _initPrice < secondRound) return (amountLeftOver / _initPrice, currentPrice);
+        if(_total + amountLeftOver / _initPrice == secondRound) return (amountLeftOver / _initPrice, 10e18);
+
+        if(totalSold < firstRound){
+            uint initDiff = firstRound - totalSold; 
+            uint amountDiff = amountLeftOver / _initPrice - initDiff;
+            hmineValue += initDiff;
+            amountLeftOver = amountDiff * _initPrice;
+            _total = 0;
         }
 
-        // Still in current round.
-        if (_amount + modTotal < roundIncrement) {
-            return ((currentPrice * _amount) / 1e18, _initPrice);
-        }
-        // Amount plus the mod total tells us tha the round or rounds will most likely be reached.
         else {
-            uint256 modDiff = roundIncrement - modTotal;
-            uint256 amountLeftOver = _amount - modDiff;
-            value += (modDiff * currentPrice) / 1e18;
+            _total -= firstRound;
+        }
 
-            uint256 amountMod = amountLeftOver % roundIncrement;
-            uint256 _round = (amountLeftOver - amountMod) / roundIncrement;
+        uint256 modTotal = _total % roundIncrement;
+        uint256 modDiff = roundIncrement - modTotal;
 
-            while (_round > 0) {
-                _total += 1000e18;
+        if(amountLeftOver / _initPrice < modDiff) return (hmineValue + amountLeftOver / _initPrice, currentPrice);
 
-                if (_total > 101000e18) {
-                    _initPrice += 3e18;
-                }
+        amountLeftOver = (amountLeftOver / _initPrice - modDiff) * _initPrice;
+        hmineValue += modDiff;
+        _initPrice += 3;
 
-                value += (roundIncrement * _initPrice) / 1e18;
-                _round = _round - 1;
+        while(amountLeftOver != 0){
+            if(amountLeftOver / _initPrice >= roundIncrement){
+                amountLeftOver = (amountLeftOver / _initPrice - roundIncrement) * _initPrice;
+                hmineValue += roundIncrement;
+                _initPrice += 3; 
             }
-
-            if (amountMod > 0) {
-                _total += amountMod;
-
-                if (_total > 101000e18) {
-                    _initPrice += 3e18;
-                }
-
-                value += (amountMod * _initPrice) / 1e18;
+            else {
+                hmineValue += amountLeftOver / _initPrice;
+                amountLeftOver = 0;
             }
         }
-        return (value, _initPrice);
+  
+        return (hmineValue, _initPrice * 1e18);
     }
 
     function getSellValue(uint256 _amount)
@@ -134,7 +150,7 @@ contract HmineSacrifice is Ownable, ReentrancyGuard {
         view
         returns (uint256, uint256)
     {
-        uint256 modTotal = totalSold % roundIncrement;
+       uint256 modTotal = totalSold % roundIncrement;
         uint256 value;
         uint256 _initPrice = currentPrice;
 
@@ -168,10 +184,11 @@ contract HmineSacrifice is Ownable, ReentrancyGuard {
 
     // Buy HMINE with MOR
     function buy(uint256 _amount) external nonReentrant {
-        require(totalSold + _amount <= maxSupply, "Exceeded supply");
 
-        (uint256 buyValue, uint256 _price) = getBuyValue(_amount);
-        uint256 amountToStakers = (buyValue * 10) / 100;
+        (uint256 hmineValue, uint256 _price) = getBuyValue(_amount);
+        require(totalSold + hmineValue <= maxSupply, "Exceeded supply");
+
+        uint256 amountToStakers = (_amount * 10) / 100;
         uint256 _stakeIndex = index;
 
         // Reward the stake holders
@@ -184,24 +201,24 @@ contract HmineSacrifice is Ownable, ReentrancyGuard {
 
         // Update user's stake entry.
         uint256 _index = assignUserIndex(msg.sender);
-        users[_index].amount += _amount;
+        users[_index].amount += hmineValue;
 
         // Update global values.
-        totalSold += _amount;
-        totalStaked += _amount;
+        totalSold += hmineValue;
+        totalStaked += hmineValue;
         currentPrice = _price;
 
         // Sends 10% to management
         IERC20(currencyToken).safeTransferFrom(
             msg.sender,
             management,
-            (buyValue * 10) / 100
+            (_amount * 10) / 100
         );
         // Sends 80% to bankroll
         IERC20(currencyToken).safeTransferFrom(
             msg.sender,
             bankroll,
-            (buyValue * 80) / 100
+            (_amount * 80) / 100
         );
     }
 
@@ -283,8 +300,15 @@ contract HmineSacrifice is Ownable, ReentrancyGuard {
     }
 
     // Reward giver sends bonus DIV to top 20 holders
-    function sendBonus() external nonReentrant {
+    function sendBonusDiv() external nonReentrant {
         require(msg.sender == rewardGiver, "Unauthorized");
+        // Work in progress
+    }
+
+    // Reward giver sends bonus DIV to top 20 holders
+    function sendDailyDiv() external nonReentrant {
+        require(msg.sender == rewardGiver, "Unauthorized");
+        // Work in progress
     }
 
     // Show user by address
