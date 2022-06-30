@@ -24,11 +24,12 @@ contract HmineSacrifice is Ownable, ReentrancyGuard {
 
     uint256 public startTime;
     uint256 public index;
-    uint256 public totalSold = 100000e18;
-    uint256 public totalStaked = 100000e18;
-    uint256 public currentPrice = 7e18; // The price is divisible by 100.  So in this case 7.00 is the current price.
+    uint256 public totalSold = 100000e18; // The contract will start with 100,000 Sold HMINE. 
+    uint256 public totalStaked = 100000e18; // The contract will start with 100,000 Staked HMINE. 
+    uint256 public currentPrice = 7e18; // The price is divisible by 1e18.  So in this case 7.00 is the current price.
     uint256 public roundIncrement = 1000e18;
-    uint256 maxSupply = 200000e18;
+    uint public rewardTotal;
+    uint maxSupply = 200000e18;
     uint maxValue = 16250000e18;
     uint firstRound = 100000e18;
     uint secondRound = 101000e18;
@@ -72,7 +73,9 @@ contract HmineSacrifice is Ownable, ReentrancyGuard {
         //Work in progress
         while(counter < userLength){
             uint256 _index = assignUserIndex(msg.sender);
-            users[_index] = _users[counter];
+            users[_index] = _users[counter]; 
+
+            rewardTotal += _users[counter].reward;
             counter += 1; 
         }
     }
@@ -94,8 +97,8 @@ contract HmineSacrifice is Ownable, ReentrancyGuard {
         }
     }
 
-    // Input the amount a HMINE and return the MOR value.
-    // Every 1000 represents a round.  For every round the price goes up 3 MOR.
+    // Input the amount a MOR and return the HMINE value.
+    // It takes into account the price upscale in case a round has been met during the buy. 
     function getBuyValue(uint256 _amount)
         internal
         view
@@ -145,12 +148,14 @@ contract HmineSacrifice is Ownable, ReentrancyGuard {
         return (hmineValue, _initPrice * 1e18);
     }
 
+    // This internal function is used to calculate the amount of DAI user will receive.  
+    // It takes into account the price reversal in case rounds have reversed during a sell order. 
     function getSellValue(uint256 _amount)
         internal
         view
         returns (uint256, uint256)
     {
-       uint256 modTotal = totalSold % roundIncrement;
+        uint256 modTotal = totalSold % roundIncrement;
         uint256 value;
         uint256 _initPrice = currentPrice;
 
@@ -184,12 +189,27 @@ contract HmineSacrifice is Ownable, ReentrancyGuard {
 
     // Buy HMINE with MOR
     function buy(uint256 _amount) external nonReentrant {
-
+        require(startTime != 0 && block.timestamp >= startTime, "Not started yet");
+        require(_amount > 0, "Invalid amount");
         (uint256 hmineValue, uint256 _price) = getBuyValue(_amount);
+        //Checks to make sure supply is not exeeded. 
         require(totalSold + hmineValue <= maxSupply, "Exceeded supply");
 
         uint256 amountToStakers = (_amount * 10) / 100;
         uint256 _stakeIndex = index;
+
+        // Sends 10% to management
+        IERC20(currencyToken).safeTransferFrom(
+            msg.sender,
+            management,
+            (_amount * 10) / 100
+        );
+        // Sends 80% to bankroll
+        IERC20(currencyToken).safeTransferFrom(
+            msg.sender,
+            bankroll,
+            (_amount * 80) / 100
+        );
 
         // Reward the stake holders
         while (_stakeIndex > 0) {
@@ -207,26 +227,21 @@ contract HmineSacrifice is Ownable, ReentrancyGuard {
         totalSold += hmineValue;
         totalStaked += hmineValue;
         currentPrice = _price;
-
-        // Sends 10% to management
-        IERC20(currencyToken).safeTransferFrom(
-            msg.sender,
-            management,
-            (_amount * 10) / 100
-        );
-        // Sends 80% to bankroll
-        IERC20(currencyToken).safeTransferFrom(
-            msg.sender,
-            bankroll,
-            (_amount * 80) / 100
-        );
+        rewardTotal += amountToStakers;
+ 
+        emit Buy(msg.sender, hmineValue, currentPrice);
     }
 
     // Sell HMINE for MOR
     function sell(uint256 _amount) external nonReentrant {
+        require(startTime != 0 && block.timestamp >= startTime, "Not started yet");
+        require(_amount > 0, "Invalid amount");
         (uint256 sellValue, uint256 _price) = getSellValue(_amount);
         // Sends HMINE to contract
         IERC20(hmineToken).safeTransferFrom(msg.sender, address(this), _amount);
+
+        // Checks to make sure there is enough dai on contract to fullfill the swap.  
+        require(IERC20(currencyToken).balanceOf(address(this)) - (sellValue * 60) / 100 >= rewardTotal, "Insufficient DAI on Contract");
 
         // Send MOR to user.  User only get's 60% of the selling price.
         IERC20(currencyToken).safeTransferFrom(
@@ -238,50 +253,58 @@ contract HmineSacrifice is Ownable, ReentrancyGuard {
         // Update global values.
         totalSold -= _amount;
         currentPrice = _price;
+
+        emit Sell(msg.sender, _amount, currentPrice);
     }
 
     // Stake HMINE
     function stake(uint256 _amount) external nonReentrant {
+        require(startTime != 0 && block.timestamp >= startTime, "Not started yet");
         require(_amount > 0, "Invalid amount");
         uint256 _index = assignUserIndex(msg.sender);
+
+        // User sends HMINE to the contract to stake
+        IERC20(hmineToken).safeTransferFrom(
+            msg.sender,
+            address(this),
+            _amount
+        );
 
         // Update user's staking amount
         users[_index].amount += _amount;
         // Update total staking amount
         totalStaked += _amount;
-
-        // User sends HMINE to the contract to stake
-        IERC20(currencyToken).safeTransferFrom(
-            msg.sender,
-            address(this),
-            _amount
-        );
     }
 
     // Unstake HMINE
     function unstake(uint256 _amount) external nonReentrant {
+        require(startTime != 0 && block.timestamp >= startTime, "Not started yet");
         require(_amount > 0, "Invalid amount");
         require(userIndex[msg.sender] != 0, "Not staked yet");
 
         uint256 _index = userIndex[msg.sender];
 
         require(
-            users[_index].amount - _amount >= 0,
+            users[_index].amount >= _amount,
             "Inefficient stake balance"
         );
 
-        // Update user's staking amount
-        users[_index].amount -= _amount;
-
-        // Update total staking amount
-        totalStaked -= _amount;
+        require(
+            _amount > 0,
+            "Invalid amount"
+        );
 
         // Goes to burn address
-        IERC20(currencyToken).safeTransfer(address(0), (_amount * 10) / 100);
+        IERC20(hmineToken).safeTransfer(address(0), (_amount * 10) / 100);
         // Goes to bankroll
-        IERC20(currencyToken).safeTransfer(bankroll, (_amount * 10) / 100);
-        // User only gets 80%
-        IERC20(currencyToken).safeTransfer(msg.sender, (_amount * 80) / 100);
+        IERC20(hmineToken).safeTransfer(bankroll, (_amount * 10) / 100);
+        // User only gets 80% HMINE
+        IERC20(hmineToken).safeTransfer(msg.sender, (_amount * 80) / 100);
+
+        // Update user's staking amount
+        users[_index].amount -= _amount;
+        // Update total staking amount
+        totalStaked -= _amount;
     }
 
     // Adds a nickname to the user.
@@ -294,21 +317,72 @@ contract HmineSacrifice is Ownable, ReentrancyGuard {
     // Claim DIV as MOR
     function claim() external {
         uint256 _index = userIndex[msg.sender];
+        require(users[_index].reward != 0, "No rewards to claim");
         uint256 claimAmount = users[_index].reward;
+        rewardTotal -= users[_index].reward;
         users[_index].reward = 0;
         IERC20(currencyToken).safeTransfer(msg.sender, claimAmount);
     }
 
     // Reward giver sends bonus DIV to top 20 holders
-    function sendBonusDiv() external nonReentrant {
+    function sendBonusDiv(uint _amount, address[] memory _topTen, address[] memory _topTwenty) external nonReentrant {
         require(msg.sender == rewardGiver, "Unauthorized");
-        // Work in progress
+        require(_amount > 0, "Invalid amount");
+        
+        // Admin sends div to the contract
+        IERC20(currencyToken).safeTransferFrom(
+            msg.sender,
+            address(this),
+            _amount
+        );
+
+        uint topTenLength = _topTen.length;
+        uint topTwentyLength = _topTwenty.length;
+        require(topTenLength == 10 && topTwentyLength == 10, "Invalid arrays");
+
+        uint topTenAmount = _amount * 75 / 1000; 
+        uint topTwentyAmount = _amount * 25 / 1000;
+
+        uint counter;
+        while(counter < 10){
+            uint _index = userIndex[_topTen[counter]];
+            require(_index != 0, "A user doesn't exist. ");
+            users[_index].reward += topTenAmount;
+        }
+
+        counter = 0;
+        while(counter < 10){
+            uint _index = userIndex[_topTwenty[counter]];
+            require(_index != 0, "A user doesn't exist. ");
+            users[_index].reward += topTwentyAmount;
+        }
+
+        rewardTotal += _amount;
     }
 
-    // Reward giver sends bonus DIV to top 20 holders
-    function sendDailyDiv() external nonReentrant {
+    // Reward giver sends daily divs to all holders
+    function sendDailyDiv(uint _amount) external nonReentrant {
         require(msg.sender == rewardGiver, "Unauthorized");
-        // Work in progress
+        require(_amount > 0, "Invalid amount");
+
+        // Admin sends div to the contract
+        IERC20(currencyToken).safeTransferFrom(
+            msg.sender,
+            address(this),
+            _amount
+        );
+
+        uint256 _stakeIndex = index;
+
+        // Reward the stake holders
+        while (_stakeIndex > 0) {
+            users[_stakeIndex].reward +=
+                (_amount * users[_stakeIndex].amount) /
+                totalStaked;
+            _stakeIndex = _stakeIndex - 1;
+        }
+
+        rewardTotal += _amount;
     }
 
     // Show user by address
@@ -348,17 +422,16 @@ contract HmineSacrifice is Ownable, ReentrancyGuard {
 
     event Buy(
         address indexed _user,
-        address indexed _nickname,
-        uint256 _amount,
-        uint256 _price,
-        uint256 _round
+        uint _amount,
+        uint _price
     );
 
     event Sell(
         address indexed _user,
-        address indexed _nickname,
-        uint256 _amount,
-        uint256 _price,
-        uint256 _round
+        uint _amount,
+        uint _price
     );
+
 }
+
+
