@@ -495,7 +495,7 @@ contract HmineSacrifice is Ownable, ReentrancyGuard {
     }
 
     // Updates the management and reward giver address.
-    function updateRewardGiver(address _rewardGiver, address _bankRoll)
+    function updateStateAddresses(address _rewardGiver, address _bankRoll)
         external
         onlyOwner
     {
