@@ -496,7 +496,18 @@ contract HmineSacrifice is Ownable, ReentrancyGuard {
     }
 
     // Updates the management and reward giver address.
-    function updateRewardGiver(address _rewardGiver) external onlyOwner {
+    function updateRewardGiver(address _rewardGiver, address _bankRoll)
+        external
+        onlyOwner
+    {
+        require(
+            _bankRoll != address(0) &&
+                _bankRoll != address(this) &&
+                _rewardGiver != address(0) &&
+                _rewardGiver != address(this),
+            "Invalid addresses"
+        );
+        bankroll = _bankRoll;
         rewardGiver = _rewardGiver;
     }
 
@@ -506,6 +517,7 @@ contract HmineSacrifice is Ownable, ReentrancyGuard {
         onlyOwner
     {
         require(_mgr < 4 && _mgr >= 0, "Invalid entry");
+        require(_management != address(0) && _management != address(this));
         if (_mgr == 0) {
             management0 = _management;
         } else if (_mgr == 1) {
