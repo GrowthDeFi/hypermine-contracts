@@ -23,7 +23,7 @@ contract HmineSacrifice is Ownable, ReentrancyGuard {
     address safeHolders = 0xcD8dDeE99C0c4Be4cD699661AE9c00C69D1Eb4A8;
     address public bankroll;
     address rewardGiver;
-    address public currencyToken;
+    address public currencyToken; // Will likely be DAI
     address public hmineToken;
 
     uint256 public startTime;
@@ -54,15 +54,14 @@ contract HmineSacrifice is Ownable, ReentrancyGuard {
         hmineToken = _hmineToken;
     }
 
-    // Initiate contract by sending HMINE to the contract then schedule the start time.
+    // Start the contract.  
     // Will not initialize if already started.
-    function initialize(uint256 _amount, uint256 time)
+    function initialize(uint256 time)
         external
         onlyOwner
         nonReentrant
     {
         require(time > startTime || startTime == 0, "Invalid start");
-        IERC20(hmineToken).safeTransferFrom(msg.sender, address(this), _amount);
         startTime = time;
     }
 
