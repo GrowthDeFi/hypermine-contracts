@@ -16,7 +16,11 @@ contract HmineSacrifice is Ownable, ReentrancyGuard {
         uint256 reward;
     }
 
-    address public management;
+    address management0 = 0x5C9dE63470D0D6d8103f7c83F1Be4F55998706FC;
+    address management1 = 0x2165fa4a32B9c228cD55713f77d2e977297D03e8;
+    address management2 = 0x70F5FB6BE943162545a496eD120495B05dC5ce07;
+    address management3 = 0x36b13280500AEBC5A75EbC1e9cB9Bf1b6A78a95e;
+    address safeHolders = 0xcD8dDeE99C0c4Be4cD699661AE9c00C69D1Eb4A8;
     address public bankroll;
     address rewardGiver;
     address public currencyToken;
@@ -39,13 +43,11 @@ contract HmineSacrifice is Ownable, ReentrancyGuard {
     mapping(uint256 => User) public users;
 
     constructor(
-        address _management,
         address _bankroll,
         address _rewardGiver,
         address _currenctyToken,
         address _hmineToken
     ) {
-        management = _management;
         bankroll = _bankroll;
         rewardGiver = _rewardGiver;
         currencyToken = _currenctyToken;
@@ -198,22 +200,69 @@ contract HmineSacrifice is Ownable, ReentrancyGuard {
             "Not started yet"
         );
         require(_amount > 0, "Invalid amount");
-        (uint256 hmineValue, uint256 _price) = getBuyValue(_amount);
+        (uint256 _hmineValue, uint256 _price) = getBuyValue(_amount);
         //Checks to make sure supply is not exeeded.
-        require(totalSold + hmineValue <= maxSupply, "Exceeded supply");
+        require(totalSold + _hmineValue <= maxSupply, "Exceeded supply");
 
+        // Sends 10% to contract for divs
+        IERC20(currencyToken).safeTransferFrom(
+            msg.sender,
+            address(this),
+            (_amount * 10) / 100
+        );
+
+        // Used to send funds to the appropriate wallets and update global data
+        _buyInternal(msg.sender, _amount, _hmineValue, _price);
+
+        emit Buy(msg.sender, _hmineValue, _price);
+    }
+
+    // Used to send funds to the appropriate wallets and update global data
+    // The buy and compound function calls this internal function.
+    function _buyInternal(
+        address _sender,
+        uint256 _amount,
+        uint256 _hmineValue,
+        uint256 _price
+    ) internal {
         uint256 amountToStakers = (_amount * 10) / 100;
         uint256 _stakeIndex = index;
 
-        // Sends 10% to management
+        // Sends 7.5% / 4 to Loft
         IERC20(currencyToken).safeTransferFrom(
-            msg.sender,
-            management,
-            (_amount * 10) / 100
+            _sender,
+            management0,
+            (_amount * 750) / 4000
         );
+        // Sends 7.5% / 4 to Ghost
+        IERC20(currencyToken).safeTransferFrom(
+            _sender,
+            management1,
+            (_amount * 750) / 4000
+        );
+        // Sends 7.5% / 4 to Mike
+        IERC20(currencyToken).safeTransferFrom(
+            _sender,
+            management2,
+            (_amount * 750) / 4000
+        );
+        // Sends 7.5% / 4 to Miko
+        IERC20(currencyToken).safeTransferFrom(
+            _sender,
+            management3,
+            (_amount * 750) / 4000
+        );
+
+        // Sends 2.5% to SafeHolders
+        IERC20(currencyToken).safeTransferFrom(
+            _sender,
+            management0,
+            (_amount * 250) / 1000
+        );
+
         // Sends 80% to bankroll
         IERC20(currencyToken).safeTransferFrom(
-            msg.sender,
+            _sender,
             bankroll,
             (_amount * 80) / 100
         );
@@ -228,16 +277,14 @@ contract HmineSacrifice is Ownable, ReentrancyGuard {
 
         // Update user's stake entry.
         uint256 _index = assignUserIndex(msg.sender);
-        users[_index].amount += hmineValue;
+        users[_index].amount += _hmineValue;
         users[_index].user = msg.sender;
 
         // Update global values.
-        totalSold += hmineValue;
-        totalStaked += hmineValue;
+        totalSold += _hmineValue;
+        totalStaked += _hmineValue;
         currentPrice = _price;
         rewardTotal += amountToStakers;
-
-        emit Buy(msg.sender, hmineValue, currentPrice);
     }
 
     // Sell HMINE for MOR
@@ -337,6 +384,24 @@ contract HmineSacrifice is Ownable, ReentrancyGuard {
         IERC20(currencyToken).safeTransfer(msg.sender, claimAmount);
     }
 
+    // Compound the divs.
+    // Uses the div to buy more HMINE internally by calling the _buyInternal.
+    function compound() external {
+        uint256 _index = userIndex[msg.sender];
+        require(users[_index].reward != 0, "No rewards to claim");
+        uint256 claimAmount = users[_index].reward;
+
+        // Removes the the claim amount from total divs for tracing purposes.
+        rewardTotal -= claimAmount;
+        // remove the div from the users reward pool.
+        users[_index].reward = 0;
+
+        //WIP
+        (uint256 _hmineValue, uint256 _price) = getBuyValue(claimAmount);
+        _buyInternal(address(this), claimAmount, _hmineValue, _price);
+        emit Compound(msg.sender, claimAmount, _price);
+    }
+
     // Reward giver sends bonus DIV to top 20 holders
     function sendBonusDiv(
         uint256 _amount,
@@ -375,6 +440,8 @@ contract HmineSacrifice is Ownable, ReentrancyGuard {
         }
 
         rewardTotal += _amount;
+
+        emit BonusReward(_amount);
     }
 
     // Reward giver sends daily divs to all holders
@@ -429,15 +496,32 @@ contract HmineSacrifice is Ownable, ReentrancyGuard {
     }
 
     // Updates the management and reward giver address.
-    function updateManagement(address _rewardGiver, address _management)
+    function updateRewardGiver(address _rewardGiver) external onlyOwner {
+        rewardGiver = _rewardGiver;
+    }
+
+    // Updates the management.
+    function updateManagement(address _management, uint256 _mgr)
         external
         onlyOwner
     {
-        rewardGiver = _rewardGiver;
-        management = _management;
+        require(_mgr < 4 && _mgr >= 0, "Invalid entry");
+        if (_mgr == 0) {
+            management0 = _management;
+        } else if (_mgr == 1) {
+            management1 = _management;
+        } else if (_mgr == 2) {
+            management2 = _management;
+        } else {
+            management3 = _management;
+        }
     }
 
     event Buy(address indexed _user, uint256 _amount, uint256 _price);
 
     event Sell(address indexed _user, uint256 _amount, uint256 _price);
+
+    event Compound(address indexed _user, uint256 _amount, uint256 _price);
+
+    event BonusReward(uint256 _amount);
 }
