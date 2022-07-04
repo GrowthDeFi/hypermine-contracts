@@ -19,7 +19,7 @@ module.exports = {
     bsc: {
       provider: () =>
         new HDWalletProvider(
-          process.env.MNENOMIC,
+          process.env.PK,
           `https://speedy-nodes-nyc.moralis.io/4c4be40d09f80112d07cb29c/bsc/mainnet`
         ),
       network_id: 56,

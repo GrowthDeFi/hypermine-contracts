@@ -1,6 +1,8 @@
 const axios = require("axios");
 const Web3 = require("web3");
 const SacData = require("./sacrificeData");
+const Sorted = require("./sortedData");
+const Tuple = require("./tupleData");
 
 const api =
   "https://api.bscscan.com/api?module=logs&action=getLogs&fromBlock=4993830&toBlock=20000000000000&address=0x3f750f814df347800ed8bd869325da8a454ed964&topic0=0xfbfbee4122d97e8c0c0bae4824575d813ebd0192d6982f360ab56834b86abd2d&apikey=B7IYJD5B8SAFC671WPYIBXH214A6VI3XXJ";
@@ -93,6 +95,59 @@ const main = () => {
 
 //main();
 
+const abi = [
+  {
+    inputs: [
+      {
+        internalType: "address",
+        name: "_user",
+        type: "address",
+      },
+    ],
+    name: "getUserByAddress",
+    outputs: [
+      {
+        components: [
+          {
+            internalType: "string",
+            name: "nickname",
+            type: "string",
+          },
+          {
+            internalType: "address",
+            name: "user",
+            type: "address",
+          },
+          {
+            internalType: "uint256",
+            name: "amount",
+            type: "uint256",
+          },
+        ],
+        internalType: "struct HmineSacrifice.User",
+        name: "",
+        type: "tuple",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+];
+const sacrificeAddress = "0x3f750f814DF347800eD8bD869325DA8A454eD964";
+
+const getNicknames = async () => {
+  const instance = new web3.eth.Contract(abi, sacrificeAddress);
+
+  Promise.all(
+    Sorted.sortedArray.map(async (entry) => {
+      const data = await instance.methods.getUserByAddress(entry.user).call();
+      return [data.nickname, entry.user, entry.amount, entry.reward];
+    })
+  ).then((res) => {
+    console.log(res);
+  });
+};
+
 const sortedData = () => {
   const sorted = SacData.array.sort(
     (a, b) => Number(b.amount) - Number(a.amount)
@@ -106,4 +161,4 @@ const sortedData = () => {
   console.log(total);
 };
 
-sortedData();
+console.log(Tuple.userList.length);

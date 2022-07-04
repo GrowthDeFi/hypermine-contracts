@@ -1,4 +1,4 @@
-const data = [
+exports.sortedArray = [
   {
     user: "0x16D088a79D7d36213618263184783fB4d6375e33",
     nickname: "0x16D088a79D7d36213618263184783fB4d6375e33",
