@@ -161,4 +161,4 @@ const sortedData = () => {
   console.log(total);
 };
 
-console.log(Tuple.userList.length);
+sortedData();

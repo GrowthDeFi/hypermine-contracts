@@ -80,7 +80,6 @@ contract HmineMain is Ownable, ReentrancyGuard {
         onlyOwner
         isRunning(false)
     {
-        require(totalSold == 100_000e18, "Migration is incomplete");
         startTime = _startTime;
 
         // Admin is supposed to send an additional 100k HMINE to the contract
@@ -88,7 +87,7 @@ contract HmineMain is Ownable, ReentrancyGuard {
         require(_balance == maxSupply, "Missing hmine balance");
     }
 
-    // Used to initally migrate the user data from the sacrifice round. Can be run multiple times. Do 10 at a time.  
+    // Used to initally migrate the user data from the sacrifice round. Can be run multiple times. Do 10 at a time.
     function migrateSacrifice(User[] memory _users)
         external
         onlyOwner
@@ -140,7 +139,7 @@ contract HmineMain is Ownable, ReentrancyGuard {
         view
         returns (uint256 _currencyReserve)
     {
-        uint256 _balance = IERC20(hmineToken).balanceOf(address(this));
+        uint256 _balance = IERC20(currencyToken).balanceOf(address(this));
         return _balance - rewardTotal;
     }
 

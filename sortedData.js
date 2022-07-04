@@ -557,6 +557,12 @@ exports.sortedArray = [
     amount: "769230769230769230",
     reward: "16014310033051",
   },
+  {
+    user: "0xCDB1c8BD7f31f6EfaeDe6B616d669561292D9Ea5",
+    nickname: "0xe24C2133714B735f7dFf541d4Fb9a101C9aBcb40",
+    amount: "2866775093451745",
+    reward: "0",
+  },
 ];
 
 const DivData = {
