@@ -8,3 +8,11 @@ HMINE MAIN LAUNCH DEV:
 hmine=0x5DF6B8712043633c92BBaB4f3bbDcd9A55cDF88A
 dai=0x73892EEf75875798ce6f3c635d9B4a6fb601B503
 main=0x3047C0b0c14d4cC008b697501aF689a0c5682046
+
+Write ARB contract for Uniswap and SushiSwap
+- Contract should be able to arb pairs that are specified by the admin
+- Set a 25% profit margin, meaning bot will only be triggered if that margin is met.  
+- Bot should run until it finds an arb opportunity.  
+- If failed due to timeout, just restart the query.  
+
+Get ETH listener to work for Uniswap router and sushiswap router. 
