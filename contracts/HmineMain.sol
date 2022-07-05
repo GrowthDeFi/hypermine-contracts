@@ -145,7 +145,7 @@ contract HmineMain is Ownable, ReentrancyGuard {
 
     // Allows for withdrawing DAI liquidity.
     // Admin is supposed to send the DAI liquidity directly to the contract.
-    function recoverReserve(uint256 _amount) external onlyOwner nonReentrant {
+    function recoverReserve(uint256 _amount) external onlyRewardGiver nonReentrant {
         // Checks to make sure there is enough dai on contract to fullfill the withdrawal.
         uint256 _balance = IERC20(currencyToken).balanceOf(address(this));
         uint256 _available = _balance - rewardTotal;
@@ -282,34 +282,44 @@ contract HmineMain is Ownable, ReentrancyGuard {
 
         // Sends 7.5% / 4 to Loft, Ghost, Mike, Miko
         uint256 _managementAmount = ((_amount * 75) / 1000) / 4;
-        for (uint256 _i = 0; _i < 4; _i++) {
-            IERC20(currencyToken).safeTransferFrom(
-                _sender,
-                management[_i],
-                _managementAmount
-            );
-        }
 
         // Sends 2.5% to SafeHolders
         uint256 _safeHoldersAmount = (_amount * 25) / 1000;
-        IERC20(currencyToken).safeTransferFrom(
-            _sender,
-            safeHolders,
-            _safeHoldersAmount
-        );
 
         // Sends 80% to bankroll
         uint256 _bankrollAmount = (_amount * 80) / 100;
-        IERC20(currencyToken).safeTransferFrom(
-            _sender,
-            bankroll,
-            _bankrollAmount
-        );
 
-        // Sends 10% to contract for divs
+        // Sends or keeps 10% to/in the contract for divs
         uint256 _amountToStakers = _amount -
             (4 * _managementAmount + _safeHoldersAmount + _bankrollAmount);
-        if (_sender != address(this)) {
+
+        if (_sender == address(this)) {
+            for (uint256 _i = 0; _i < 4; _i++) {
+                IERC20(currencyToken).safeTransfer(
+                    management[_i],
+                    _managementAmount
+                );
+            }
+            IERC20(currencyToken).safeTransfer(safeHolders, _safeHoldersAmount);
+            IERC20(currencyToken).safeTransfer(bankroll, _bankrollAmount);
+        } else {
+            for (uint256 _i = 0; _i < 4; _i++) {
+                IERC20(currencyToken).safeTransferFrom(
+                    _sender,
+                    management[_i],
+                    _managementAmount
+                );
+            }
+            IERC20(currencyToken).safeTransferFrom(
+                _sender,
+                safeHolders,
+                _safeHoldersAmount
+            );
+            IERC20(currencyToken).safeTransferFrom(
+                _sender,
+                bankroll,
+                _bankrollAmount
+            );
             IERC20(currencyToken).safeTransferFrom(
                 _sender,
                 address(this),
