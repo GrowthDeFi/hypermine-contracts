@@ -196,7 +196,6 @@ contract("Deployed&Test", ([admin, sacrificesTo, carol, dev, tester]) => {
     await this.hmine.startFirstRound(Math.trunc(Date.now() / 1000 - 86400 * 3));
     await this.hmine.startSecondRound(Math.trunc(Date.now() / 1000 + 86400));
     const round = await this.hmine.getCurrentRound();
-    console.log(round * 1)
     await expect(
       this.hmine.sacrificeBNB({ from: dev, value: "10000000000000000000" })
     ).to.be.revertedWith("Round ended or not started yet");
