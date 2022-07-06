@@ -4,27 +4,16 @@ const MockDai = artifacts.require("MockDai.sol");
 
 module.exports = async function (deployer, network, addresses) {
   if (network == "mumbai") {
-   
   }
 
   if (network == "bsc") {
-
-    await deployer.deploy(
-      HmineToken,
-    );
+    await deployer.deploy(HmineToken);
     const hmineToken = await HmineToken.deployed();
 
-    await deployer.deploy(
-      MockDai,
-    );
-    const mockDai = await MockDai.deployed();
+    const dai = "0x1af3f329e8be154074d8769d1ffa4ee058b1dbc3";
 
-    await deployer.deploy(
-      Hmine,
-      mockDai.address,
-      hmineToken.address
-    );
-    const hmine = await Hmine.deployed();
-   
+    await deployer.deploy(Hmine, dai, hmineToken.address);
+
+    await Hmine.deployed();
   }
 };
